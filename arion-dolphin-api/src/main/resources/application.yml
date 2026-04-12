@@ -1,0 +1,63 @@
+server:
+  port: ${ARION_DOLPHIN_PORT:12348}
+
+spring:
+  application:
+    name: arion-dolphin
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${ARION_DOLPHIN_DB_URL:jdbc:mysql://127.0.0.1:3306/arion_dolphin?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true}
+    username: ${ARION_DOLPHIN_DB_USERNAME:arion}
+    password: ${ARION_DOLPHIN_DB_PASSWORD:arion123}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 60000
+  sql:
+    init:
+      mode: ${ARION_DOLPHIN_SQL_INIT_MODE:always}
+      schema-locations: classpath:sql/schema.sql
+      continue-on-error: true
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+arion-dolphin:
+  auth:
+    token: ${ARION_DOLPHIN_AUTH_TOKEN:}
+
+  dolphinscheduler:
+    url: ${ARION_DOLPHIN_DS_URL:http://localhost:12345/dolphinscheduler}
+    token: ${ARION_DOLPHIN_DS_TOKEN:}
+
+  notification:
+    lark:
+      webhook: ${ARION_DOLPHIN_NOTIFICATION_LARK_WEBHOOK:}
+
+logging:
+  level:
+    io.github.zzih.arion.dolphin: ${ARION_DOLPHIN_LOG_LEVEL:DEBUG}
+    org.springframework: INFO
