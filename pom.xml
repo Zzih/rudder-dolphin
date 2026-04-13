@@ -280,4 +280,14 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>zzih-nexus-releases</id>
+            <url>https://nexus.zzih.net:81/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>zzih-nexus-snapshots</id>
+            <url>https://nexus.zzih.net:81/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
