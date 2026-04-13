@@ -20,6 +20,7 @@ package io.github.zzih.arion.dolphin.service.publish.handler;
 import io.github.zzih.arion.dolphin.common.constants.PublishConstants;
 import io.github.zzih.arion.dolphin.common.utils.ThreadParamMapUtils;
 import io.github.zzih.arion.dolphin.domain.dto.TaskPublishDto;
+import io.github.zzih.arion.dolphin.service.task.TaskDefinitionConverter;
 
 import java.util.List;
 import java.util.Map;
@@ -29,11 +30,15 @@ import org.apache.dolphinscheduler.dao.entity.DagData;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class UpdateWorkflowTaskListHandler extends AbstractPublishHandler {
+
+    @Resource
+    private TaskDefinitionConverter taskDefinitionConverter;
 
     @Override
     public boolean canHandle() {
@@ -49,6 +54,9 @@ public class UpdateWorkflowTaskListHandler extends AbstractPublishHandler {
         WorkflowDefinition wd = updateList.get(0);
         log.info("Updating tasks in workflow: name={}, code={}", wd.getName(), wd.getCode());
 
+        String taskDefinitionJson = taskDefinitionConverter.convertToJson(dto.getTaskDefinitions());
+        String taskRelationJson = taskDefinitionConverter.toJson(dto.getTaskRelations());
+
         dolphinSchedulerClient.updateWorkflow(
                 projectCode,
                 wd.getCode(),
@@ -57,8 +65,8 @@ public class UpdateWorkflowTaskListHandler extends AbstractPublishHandler {
                 wd.getGlobalParams(),
                 wd.getTimeout(),
                 ReleaseState.OFFLINE,
-                dto.getTaskDefinitions(),
-                dto.getTaskRelations());
+                taskDefinitionJson,
+                taskRelationJson);
 
         log.info("Tasks updated in workflow: name={}, code={}", wd.getName(), wd.getCode());
     }

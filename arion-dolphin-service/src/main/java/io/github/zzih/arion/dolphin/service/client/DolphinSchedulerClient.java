@@ -23,8 +23,10 @@ import io.github.zzih.arion.dolphin.common.utils.ThreadParamMapUtils;
 import io.github.zzih.arion.dolphin.service.enums.PublishErrorCode;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.dolphinscheduler.common.enums.FailureStrategy;
 import org.apache.dolphinscheduler.common.enums.Priority;
@@ -146,15 +148,15 @@ public class DolphinSchedulerClient {
     }
 
     public long createWorkflow(long projectCode, String name, String description, Object globalParams,
-                               int timeout, List<?> taskDefinitions, List<?> taskRelations) {
+                               int timeout, String taskDefinitionJson, String taskRelationJson) {
         String url = baseUrl + "/projects/" + projectCode + "/workflow-definition";
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("name", name);
         params.add("description", description);
         params.add("globalParams", resolveGlobalParams(globalParams));
         params.add("timeout", String.valueOf(timeout));
-        params.add("taskDefinitionJson", toJson(taskDefinitions));
-        params.add("taskRelationJson", toJson(taskRelations));
+        params.add("taskDefinitionJson", taskDefinitionJson);
+        params.add("taskRelationJson", taskRelationJson);
         params.add("locations", "");
         params.add("executionType", DEFAULT_EXECUTION_TYPE);
         WorkflowDefinition wd = doPost(url, params, WorkflowDefinition.class);
@@ -163,19 +165,29 @@ public class DolphinSchedulerClient {
 
     public DagData updateWorkflow(long projectCode, long workflowCode, String name, String description,
                                   Object globalParams, int timeout, ReleaseState releaseState,
-                                  List<?> taskDefinitions, List<?> taskRelations) {
+                                  String taskDefinitionJson, String taskRelationJson) {
         String url = baseUrl + "/projects/" + projectCode + "/workflow-definition/" + workflowCode;
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("name", name);
         params.add("description", description);
         params.add("globalParams", resolveGlobalParams(globalParams));
         params.add("timeout", String.valueOf(timeout));
-        params.add("taskDefinitionJson", toJson(taskDefinitions));
-        params.add("taskRelationJson", toJson(taskRelations));
+        params.add("taskDefinitionJson", taskDefinitionJson);
+        params.add("taskRelationJson", taskRelationJson);
         params.add("locations", "");
         params.add("releaseState", releaseState.name());
         params.add("executionType", DEFAULT_EXECUTION_TYPE);
         return doPut(url, params, DagData.class);
+    }
+
+    /**
+     * Update workflow using raw DS entity lists (used for rollback with original DagData).
+     */
+    public DagData updateWorkflow(long projectCode, long workflowCode, String name, String description,
+                                  Object globalParams, int timeout, ReleaseState releaseState,
+                                  List<?> taskDefinitions, List<?> taskRelations) {
+        return updateWorkflow(projectCode, workflowCode, name, description, globalParams, timeout,
+                releaseState, serializeTaskDefinitions(taskDefinitions), toJson(taskRelations));
     }
 
     public void deleteWorkflow(long projectCode, long workflowCode) {
@@ -254,6 +266,27 @@ public class DolphinSchedulerClient {
             return Collections.emptyList();
         }
         return parseList(data, AccessToken.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String serializeTaskDefinitions(List<?> taskDefinitions) {
+        try {
+            List<Map<String, Object>> converted = new ArrayList<>();
+            for (Object td : taskDefinitions) {
+                Map<String, Object> map = objectMapper.convertValue(td, Map.class);
+                Object taskParams = map.get("taskParams");
+                if (taskParams != null && !(taskParams instanceof String)) {
+                    map.put("taskParams", objectMapper.writeValueAsString(taskParams));
+                }
+                converted.add(map);
+            }
+            return objectMapper.writeValueAsString(converted);
+        } catch (BizException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BizException(PublishErrorCode.DS_API_ERROR,
+                    "Failed to serialize task definitions: " + e.getMessage());
+        }
     }
 
     private String resolveGlobalParams(Object globalParams) {

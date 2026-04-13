@@ -20,6 +20,7 @@ package io.github.zzih.arion.dolphin.service.publish.handler;
 import io.github.zzih.arion.dolphin.common.constants.PublishConstants;
 import io.github.zzih.arion.dolphin.common.utils.ThreadParamMapUtils;
 import io.github.zzih.arion.dolphin.domain.dto.WorkflowPublishDto;
+import io.github.zzih.arion.dolphin.service.task.TaskDefinitionConverter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,11 +29,15 @@ import java.util.Map;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class CreateWorkflowHandler extends AbstractPublishHandler {
+
+    @Resource
+    private TaskDefinitionConverter taskDefinitionConverter;
 
     @Override
     public boolean canHandle() {
@@ -53,6 +58,9 @@ public class CreateWorkflowHandler extends AbstractPublishHandler {
                 continue;
             }
 
+            String taskDefinitionJson = taskDefinitionConverter.convertToJson(wfParam.getTaskDefinitions());
+            String taskRelationJson = taskDefinitionConverter.toJson(wfParam.getTaskRelations());
+
             log.info("Creating workflow: {}", wd.getName());
             long workflowCode = dolphinSchedulerClient.createWorkflow(
                     projectCode,
@@ -60,8 +68,8 @@ public class CreateWorkflowHandler extends AbstractPublishHandler {
                     wfParam.getDescription() != null ? wfParam.getDescription() : "",
                     wfParam.getGlobalParams(),
                     wfParam.getTimeout() != null ? wfParam.getTimeout() : 0,
-                    wfParam.getTaskDefinitions(),
-                    wfParam.getTaskRelations());
+                    taskDefinitionJson,
+                    taskRelationJson);
 
             wd.setCode(workflowCode);
             wd.setProjectCode(projectCode);
