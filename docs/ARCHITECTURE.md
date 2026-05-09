@@ -1,11 +1,11 @@
-# Arion Dolphin 架构文档
+# Rudder Dolphin 架构文档
 
 ## 概述
 
-Arion Dolphin 是 DolphinScheduler 的上层工作流发布服务，位于 Rudder 和 DolphinScheduler 之间：
+Rudder Dolphin 是 DolphinScheduler 的上层工作流发布服务，位于 Rudder 和 DolphinScheduler 之间：
 
 ```
-Rudder → ArionDolphin → DolphinScheduler REST API
+Rudder → RudderDolphin → DolphinScheduler REST API
 ```
 
 核心职责：将上游系统的发布请求转化为对 DolphinScheduler 的一系列 API 调用，并提供事务性回滚保障。
@@ -25,20 +25,20 @@ Rudder → ArionDolphin → DolphinScheduler REST API
 ## 模块结构
 
 ```
-arion-dolphin (parent)
-├── arion-dolphin-common     核心工具类、常量、异常、统一响应
-├── arion-dolphin-domain     DTO、请求对象、值对象
-├── arion-dolphin-dao        数据访问层（MyBatis-Plus）
-├── arion-dolphin-service    业务逻辑：策略、处理器链、DS 客户端
-├── arion-dolphin-api        REST API 入口、拦截器、异常处理
-└── arion-dolphin-client     轻量级 SDK，供外部服务集成
+rudder-dolphin (parent)
+├── rudder-dolphin-common     核心工具类、常量、异常、统一响应
+├── rudder-dolphin-domain     DTO、请求对象、值对象
+├── rudder-dolphin-dao        数据访问层（MyBatis-Plus）
+├── rudder-dolphin-service    业务逻辑：策略、处理器链、DS 客户端
+├── rudder-dolphin-api        REST API 入口、拦截器、异常处理
+└── rudder-dolphin-client     轻量级 SDK，供外部服务集成
 ```
 
 **依赖关系：**
 
 ```
-arion-dolphin-api → arion-dolphin-service → arion-dolphin-dao → arion-dolphin-domain → arion-dolphin-common
-arion-dolphin-client → arion-dolphin-domain
+rudder-dolphin-api → rudder-dolphin-service → rudder-dolphin-dao → rudder-dolphin-domain → rudder-dolphin-common
+rudder-dolphin-client → rudder-dolphin-domain
 ```
 
 ---
@@ -304,9 +304,9 @@ ThreadParamMapUtils.clear()
 ## 包结构
 
 ```
-io.github.zzih.arion.dolphin
+io.github.zzih.rudder.dolphin
 ├── api
-│   ├── ArionApplication.java           启动类
+│   ├── RudderDolphinApplication.java           启动类
 │   ├── advice
 │   │   └── GlobalExceptionHandler.java 全局异常处理
 │   ├── config
@@ -374,8 +374,8 @@ io.github.zzih.arion.dolphin
 │       └── util
 │           └── ScheduleJsonBuilder.java          调度 JSON 构建
 └── client
-    ├── ArionClient.java                SDK 客户端
-    ├── ArionClientAutoConfiguration.java 自动配置
-    ├── ArionClientProperties.java       配置属性
-    └── ArionException.java             SDK 异常
+    ├── RudderDolphinClient.java                SDK 客户端
+    ├── RudderDolphinClientAutoConfiguration.java 自动配置
+    ├── RudderDolphinClientProperties.java       配置属性
+    └── RudderDolphinException.java             SDK 异常
 ```

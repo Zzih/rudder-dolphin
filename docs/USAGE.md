@@ -1,6 +1,6 @@
-# Arion Dolphin 使用文档
+# Rudder Dolphin 使用文档
 
-Arion Dolphin 是 DolphinScheduler 的上层工作流发布服务，提供项目发布、工作流发布、任务发布三种 API，支持事务性回滚。
+Rudder Dolphin 是 DolphinScheduler 的上层工作流发布服务，提供项目发布、工作流发布、任务发布三种 API，支持事务性回滚。
 
 ## 快速开始
 
@@ -16,29 +16,29 @@ Arion Dolphin 是 DolphinScheduler 的上层工作流发布服务，提供项目
 
 ```bash
 # 数据库
-ARION_DOLPHIN_DB_URL=jdbc:mysql://127.0.0.1:3306/arion_dolphin?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
-ARION_DOLPHIN_DB_USERNAME=arion
-ARION_DOLPHIN_DB_PASSWORD=arion123
+RUDDER_DOLPHIN_DB_URL=jdbc:mysql://127.0.0.1:3306/rudder_dolphin?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+RUDDER_DOLPHIN_DB_USERNAME=rudder
+RUDDER_DOLPHIN_DB_PASSWORD=rudder123
 
 # DolphinScheduler
-ARION_DOLPHIN_DS_URL=http://localhost:12345/dolphinscheduler
-ARION_DOLPHIN_DS_TOKEN=your-ds-admin-token
+RUDDER_DOLPHIN_DS_URL=http://localhost:12345/dolphinscheduler
+RUDDER_DOLPHIN_DS_TOKEN=your-ds-admin-token
 
 # 可选：API 认证（留空则不启用鉴权）
-ARION_DOLPHIN_AUTH_TOKEN=
+RUDDER_DOLPHIN_AUTH_TOKEN=
 
 # 可选：飞书通知
-ARION_DOLPHIN_NOTIFICATION_LARK_WEBHOOK=
+RUDDER_DOLPHIN_NOTIFICATION_LARK_WEBHOOK=
 ```
 
 ### 启动
 
 ```bash
 mvn clean package -DskipTests
-java -jar arion-dolphin-api/target/arion-dolphin-api-0.1.0-SNAPSHOT.jar
+java -jar rudder-dolphin-api/target/rudder-dolphin-api-0.1.0-SNAPSHOT.jar
 ```
 
-默认端口 `12348`，可通过 `ARION_DOLPHIN_PORT` 环境变量修改。
+默认端口 `12348`，可通过 `RUDDER_DOLPHIN_PORT` 环境变量修改。
 
 ### API 文档
 
@@ -54,10 +54,10 @@ java -jar arion-dolphin-api/target/arion-dolphin-api-0.1.0-SNAPSHOT.jar
 
 所有接口均为 `POST` 请求，Content-Type 为 `application/json`。
 
-如果配置了 `ARION_DOLPHIN_AUTH_TOKEN`，请求需要携带 Header：
+如果配置了 `RUDDER_DOLPHIN_AUTH_TOKEN`，请求需要携带 Header：
 
 ```
-token: your-arion-auth-token
+token: your-rudder-dolphin-auth-token
 ```
 
 ### 统一响应格式
@@ -265,14 +265,14 @@ POST /publish/task
 
 ## Client SDK
 
-Arion Dolphin 提供 Java Client SDK，可直接集成到上游服务中。
+Rudder Dolphin 提供 Java Client SDK，可直接集成到上游服务中。
 
 ### 引入依赖
 
 ```xml
 <dependency>
     <groupId>io.github.zzih</groupId>
-    <artifactId>arion-dolphin-client</artifactId>
+    <artifactId>rudder-dolphin-client</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -280,31 +280,31 @@ Arion Dolphin 提供 Java Client SDK，可直接集成到上游服务中。
 ### Spring Boot 自动配置
 
 ```yaml
-arion-dolphin:
+rudder-dolphin:
   client:
     url: http://localhost:12348
-    token: your-arion-auth-token  # 可选
+    token: your-rudder-dolphin-auth-token  # 可选
 ```
 
 注入使用：
 
 ```java
 @Resource
-private ArionClient arionClient;
+private RudderDolphinClient rudderDolphinClient;
 
 public void publish() {
     ProjectPublishRequest request = new ProjectPublishRequest();
     request.setProjectName("my-project");
     request.setUserName("admin");
     request.setWorkflows(List.of(...));
-    arionClient.publishProject(request);
+    rudderDolphinClient.publishProject(request);
 }
 ```
 
 ### 手动创建
 
 ```java
-ArionClient client = new ArionClient("http://localhost:12348", "your-token");
+RudderDolphinClient client = new RudderDolphinClient("http://localhost:12348", "your-token");
 client.publishProject(request);
 ```
 
@@ -312,7 +312,7 @@ client.publishProject(request);
 
 ## 用户 Token 机制
 
-Arion Dolphin 支持按发布用户匹配 DolphinScheduler 用户 token：
+Rudder Dolphin 支持按发布用户匹配 DolphinScheduler 用户 token：
 
 1. 请求中的 `userName` 会与 DS 用户列表匹配
 2. 匹配成功后，使用该用户的 Access Token 操作 DS API

@@ -1,0 +1,59 @@
+server:
+  port: ${RUDDER_DOLPHIN_PORT:12348}
+
+spring:
+  application:
+    name: rudder-dolphin
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${RUDDER_DOLPHIN_DB_URL:jdbc:mysql://127.0.0.1:3306/rudder?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowMultiQueries=true}
+    username: ${RUDDER_DOLPHIN_DB_USERNAME:rudder}
+    password: ${RUDDER_DOLPHIN_DB_PASSWORD:rudder123}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 60000
+  sql:
+    init:
+      mode: ${RUDDER_DOLPHIN_SQL_INIT_MODE:always}
+      schema-locations: classpath:sql/schema.sql
+      continue-on-error: true
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+    # Jackson 3 默认 LocalDateTime 就序列化成 ISO 字符串，WRITE_DATES_AS_TIMESTAMPS 这个 flag 已删
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  scalar:
+    path: /scalar
+
+rudder-dolphin:
+  auth:
+    token: ${RUDDER_DOLPHIN_AUTH_TOKEN:}
+
+  dolphinscheduler:
+    url: ${RUDDER_DOLPHIN_DS_URL:http://localhost:12345/dolphinscheduler}
+    token: ${RUDDER_DOLPHIN_DS_TOKEN:}
+
+  notification:
+    lark:
+      webhook: ${RUDDER_DOLPHIN_NOTIFICATION_LARK_WEBHOOK:}
+
+logging:
+  level:
+    io.github.zzih.rudder.dolphin: ${RUDDER_DOLPHIN_LOG_LEVEL:DEBUG}
+    org.springframework: INFO
