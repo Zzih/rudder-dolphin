@@ -19,24 +19,28 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.WorkflowPublishDto;
-import io.github.zzih.rudder.dolphin.domain.qo.ScheduleParam;
-import io.github.zzih.rudder.dolphin.service.publish.util.ScheduleJsonBuilder;
+import io.github.zzih.rudder.dolphin.service.publish.adapter.ScheduleAdapter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.dolphinscheduler.common.enums.ReleaseState;
 import org.apache.dolphinscheduler.dao.entity.Schedule;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.WorkflowBundle;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class UpdateScheduleHandler extends AbstractPublishHandler {
+
+    @Resource
+    private ScheduleAdapter scheduleAdapter;
 
     @Override
     public boolean canHandle() {
@@ -47,7 +51,7 @@ public class UpdateScheduleHandler extends AbstractPublishHandler {
     public void handle() {
         long projectCode = ThreadParamMapUtils.get(PublishConstants.PROJECT_CODE);
         List<WorkflowDefinition> updateList = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_UPDATE_LIST);
-        Map<String, WorkflowPublishDto> paramMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_PARAM_MAP);
+        Map<String, WorkflowBundle> bundleMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_BUNDLE_MAP);
 
         List<Schedule> existingSchedules = dolphinSchedulerClient.listSchedules(projectCode);
         Map<Long, Schedule> scheduleMap = new HashMap<>();
@@ -59,26 +63,31 @@ public class UpdateScheduleHandler extends AbstractPublishHandler {
         List<Integer> newlyCreatedIds = new ArrayList<>();
 
         for (WorkflowDefinition wd : updateList) {
-            WorkflowPublishDto wfParam = paramMap != null ? paramMap.get(wd.getName()) : null;
-            if (wfParam == null || wfParam.getSchedule() == null) {
+            WorkflowBundle wf = bundleMap != null ? bundleMap.get(wd.getName()) : null;
+            if (wf == null || wf.getSchedule() == null) {
                 continue;
             }
 
-            ScheduleParam scheduleParam = wfParam.getSchedule();
-            String scheduleJson = ScheduleJsonBuilder.build(scheduleParam);
+            String scheduleJson = scheduleAdapter.toDsScheduleJson(wf.getSchedule());
+            boolean online = shouldOnline(wf.getSchedule());
             Schedule existing = scheduleMap.get(wd.getCode());
 
             if (existing != null) {
-                log.info("Updating schedule for workflow: name={}, scheduleId={}", wd.getName(), existing.getId());
+                log.info("Updating schedule for workflow: name={}, scheduleId={}, status={}",
+                        wf.getName(), existing.getId(), online ? "ONLINE" : "OFFLINE");
                 updatedOldSchedules.put(existing.getId(), existing);
+                // DS 不允许 update 在线 schedule,先下线。update 完按 bundle 想要的状态决定是否再上线。
                 dolphinSchedulerClient.offlineSchedule(projectCode, existing.getId());
                 dolphinSchedulerClient.updateSchedule(
                         projectCode, existing.getId(), scheduleJson,
                         DEFAULT_FAILURE_STRATEGY, DEFAULT_WARNING_TYPE, DEFAULT_PRIORITY);
-                dolphinSchedulerClient.onlineSchedule(projectCode, existing.getId());
+                if (online) {
+                    dolphinSchedulerClient.onlineSchedule(projectCode, existing.getId());
+                }
             } else {
-                log.info("Creating schedule for existing workflow: name={}", wd.getName());
-                Schedule schedule = createAndOnlineSchedule(projectCode, wd.getCode(), scheduleJson);
+                log.info("Creating schedule for existing workflow: name={}, status={}",
+                        wf.getName(), online ? "ONLINE" : "OFFLINE");
+                Schedule schedule = createSchedule(projectCode, wd.getCode(), scheduleJson, online);
                 newlyCreatedIds.add(schedule.getId());
             }
         }
@@ -104,13 +113,16 @@ public class UpdateScheduleHandler extends AbstractPublishHandler {
             for (Map.Entry<Integer, Schedule> entry : updatedOldSchedules.entrySet()) {
                 try {
                     Schedule old = entry.getValue();
-                    String oldJson = ScheduleJsonBuilder.buildFromSchedule(old);
+                    String oldJson = scheduleAdapter.fromDsSchedule(old);
                     dolphinSchedulerClient.offlineSchedule(projectCode, entry.getKey());
                     dolphinSchedulerClient.updateSchedule(
                             projectCode, entry.getKey(), oldJson,
                             old.getFailureStrategy(), old.getWarningType(),
                             old.getWorkflowInstancePriority());
-                    dolphinSchedulerClient.onlineSchedule(projectCode, entry.getKey());
+                    // 还原成 update 之前 schedule 的真实状态,而不是无脑再上线。
+                    if (ReleaseState.ONLINE.equals(old.getReleaseState())) {
+                        dolphinSchedulerClient.onlineSchedule(projectCode, entry.getKey());
+                    }
                 } catch (Exception e) {
                     log.error("Failed to rollback schedule update: id={}", entry.getKey(), e);
                 }

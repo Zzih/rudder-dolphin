@@ -17,13 +17,15 @@
 
 package io.github.zzih.rudder.dolphin.service.publish;
 
-import io.github.zzih.rudder.dolphin.domain.dto.ProjectPublishDto;
-import io.github.zzih.rudder.dolphin.domain.dto.TaskPublishDto;
+import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
 import io.github.zzih.rudder.dolphin.service.publish.strategy.ProjectPublishStrategy;
-import io.github.zzih.rudder.dolphin.service.publish.strategy.TaskPublishStrategy;
+
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
+import io.github.zzih.rudder.publish.api.bundle.WorkflowPublishBundle;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,24 +36,25 @@ public class PublishServiceImpl implements PublishService {
     @Resource
     private ProjectPublishStrategy projectPublishStrategy;
 
-    @Resource
-    private TaskPublishStrategy taskPublishStrategy;
-
     @Override
-    public void publishProject(ProjectPublishDto dto) {
-        log.info("Publishing project: {}", dto.getProjectName());
-        projectPublishStrategy.publish(dto, true);
+    public PublishResult publishProject(ProjectPublishBundle bundle) {
+        log.info("Publishing project: code={}, name={}", bundle.getProjectCode(), bundle.getProjectName());
+        return projectPublishStrategy.publish(bundle, true);
     }
 
     @Override
-    public void publishWorkflow(ProjectPublishDto dto) {
-        log.info("Publishing workflow to project: {}", dto.getProjectName());
-        projectPublishStrategy.publish(dto, false);
-    }
-
-    @Override
-    public void publishTask(TaskPublishDto dto) {
-        log.info("Publishing task to workflow: {} in project: {}", dto.getWorkflowName(), dto.getProjectName());
-        taskPublishStrategy.publish(dto, false);
+    public PublishResult publishWorkflow(WorkflowPublishBundle wfBundle) {
+        log.info("Publishing workflow: code={}, name={}",
+                wfBundle.getWorkflow().getCode(), wfBundle.getWorkflow().getName());
+        ProjectPublishBundle bundle = ProjectPublishBundle.builder()
+                .projectCode(wfBundle.getProjectCode())
+                .projectName(wfBundle.getProjectName())
+                .projectDescription(wfBundle.getProjectDescription())
+                .userName(wfBundle.getUserName())
+                .datasources(wfBundle.getDatasources())
+                .resources(wfBundle.getResources())
+                .workflows(List.of(wfBundle.getWorkflow()))
+                .build();
+        return projectPublishStrategy.publish(bundle, false);
     }
 }

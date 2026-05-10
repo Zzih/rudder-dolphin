@@ -19,11 +19,12 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.ProjectPublishDto;
+import io.github.zzih.rudder.dolphin.domain.result.PublishResult.ProjectOutcome;
 
 import org.apache.dolphinscheduler.dao.entity.Project;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -33,18 +34,19 @@ public class UpdateProjectHandler extends AbstractPublishHandler {
     @Override
     public boolean canHandle() {
         return !ThreadParamMapUtils.get(PublishConstants.IS_NEW_PROJECT, true)
-                && !ThreadParamMapUtils.get(PublishConstants.IS_TASK_PUBLISH, false)
                 && ThreadParamMapUtils.get(PublishConstants.IS_FULL_PUBLISH, true);
     }
 
     @Override
     public void handle() {
-        ProjectPublishDto dto = ThreadParamMapUtils.get(PublishConstants.PROJECT_DATA);
+        ProjectPublishBundle bundle = ThreadParamMapUtils.get(PublishConstants.PROJECT_BUNDLE);
+        String projectName = ThreadParamMapUtils.get(PublishConstants.PROJECT_NAME);
         long projectCode = ThreadParamMapUtils.get(PublishConstants.PROJECT_CODE);
-        String description = dto.getDescription() != null ? dto.getDescription() : "";
+        String description = bundle.getProjectDescription() != null ? bundle.getProjectDescription() : "";
 
-        log.info("Updating project: name={}, code={}", dto.getProjectName(), projectCode);
-        dolphinSchedulerClient.updateProject(projectCode, dto.getProjectName(), description);
+        log.info("Updating project: name={}, code={}", projectName, projectCode);
+        dolphinSchedulerClient.updateProject(projectCode, projectName, description);
+        ThreadParamMapUtils.put(PublishConstants.PROJECT_OUTCOME, ProjectOutcome.UPDATED);
     }
 
     @Override

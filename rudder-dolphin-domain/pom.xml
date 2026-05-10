@@ -13,5 +13,18 @@
     <name>Rudder Dolphin Domain</name>
 
     <dependencies>
+        <!-- Rudder publish wire contract: bundle types flow through this module. -->
+        <dependency>
+            <groupId>io.github.zzih</groupId>
+            <artifactId>rudder-publish-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.zzih</groupId>
+            <artifactId>rudder-task-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.zzih</groupId>
+            <artifactId>rudder-common</artifactId>
+        </dependency>
     </dependencies>
 </project>

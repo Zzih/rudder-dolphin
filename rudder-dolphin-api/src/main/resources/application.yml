@@ -48,6 +48,9 @@ rudder-dolphin:
   dolphinscheduler:
     url: ${RUDDER_DOLPHIN_DS_URL:http://localhost:12345/dolphinscheduler}
     token: ${RUDDER_DOLPHIN_DS_TOKEN:}
+    # rudder 上传的资源在 DS 资源中心的子目录(相对于当前 tenant 的资源根)。
+    # 实际 fullName 形如 <tenantRoot>/<resource-base-dir>/<file>;留空或填 "/" 则直接落到 tenant 根。
+    resource-base-dir: ${RUDDER_DOLPHIN_DS_RESOURCE_BASE_DIR:rudder}
 
   notification:
     lark:

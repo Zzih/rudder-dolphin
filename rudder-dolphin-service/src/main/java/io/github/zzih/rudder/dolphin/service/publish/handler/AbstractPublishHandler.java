@@ -31,6 +31,7 @@ import org.apache.dolphinscheduler.dao.entity.DagData;
 import org.apache.dolphinscheduler.dao.entity.Schedule;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 
+import io.github.zzih.rudder.publish.api.bundle.ScheduleBundle;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,12 +70,20 @@ public abstract class AbstractPublishHandler implements PublishHandler {
         return list != null && !list.isEmpty();
     }
 
-    protected Schedule createAndOnlineSchedule(long projectCode, long workflowCode, String scheduleJson) {
+    /** 创建一条调度,按 {@code shouldOnline} 决定是否立刻上线。 */
+    protected Schedule createSchedule(long projectCode, long workflowCode, String scheduleJson, boolean shouldOnline) {
         Schedule schedule = dolphinSchedulerClient.createSchedule(
                 projectCode, workflowCode, scheduleJson,
                 DEFAULT_FAILURE_STRATEGY, DEFAULT_WARNING_TYPE, DEFAULT_PRIORITY);
-        dolphinSchedulerClient.onlineSchedule(projectCode, schedule.getId());
+        if (shouldOnline) {
+            dolphinSchedulerClient.onlineSchedule(projectCode, schedule.getId());
+        }
         return schedule;
+    }
+
+    /** rudder ScheduleBundle.status 解析:仅 {@code "ONLINE"}(忽略大小写)走上线;其他一律保持下线。 */
+    protected static boolean shouldOnline(ScheduleBundle schedule) {
+        return schedule != null && "ONLINE".equalsIgnoreCase(schedule.getStatus());
     }
 
     protected void restoreWorkflowFromDag(long projectCode, long workflowCode, DagData dagData) {
@@ -83,7 +92,8 @@ public abstract class AbstractPublishHandler implements PublishHandler {
                 projectCode, workflowCode, oldWd.getName(),
                 oldWd.getDescription(), oldWd.getGlobalParams(),
                 oldWd.getTimeout(), ReleaseState.OFFLINE,
-                dagData.getTaskDefinitionList(), dagData.getWorkflowTaskRelationList());
+                dagData.getTaskDefinitionList(), dagData.getWorkflowTaskRelationList(),
+                oldWd.getLocations());
     }
 
     protected void rollbackDeleteSchedules(long projectCode, List<Integer> scheduleIds) {

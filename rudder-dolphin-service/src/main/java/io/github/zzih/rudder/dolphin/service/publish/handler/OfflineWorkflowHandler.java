@@ -19,9 +19,6 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.ProjectPublishDto;
-import io.github.zzih.rudder.dolphin.domain.dto.TaskPublishDto;
-import io.github.zzih.rudder.dolphin.domain.dto.WorkflowPublishDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +29,8 @@ import org.apache.dolphinscheduler.common.enums.ReleaseState;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
+import io.github.zzih.rudder.publish.api.bundle.WorkflowBundle;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -54,7 +53,10 @@ public class OfflineWorkflowHandler extends AbstractPublishHandler {
         boolean fullPublish = ThreadParamMapUtils.get(PublishConstants.IS_FULL_PUBLISH, true);
         Set<String> targetNames = null;
         if (!fullPublish) {
-            targetNames = resolveTargetNames();
+            ProjectPublishBundle bundle = ThreadParamMapUtils.get(PublishConstants.PROJECT_BUNDLE);
+            targetNames = bundle.getWorkflows().stream()
+                    .map(WorkflowBundle::getName)
+                    .collect(Collectors.toSet());
         }
 
         List<Long> offlinedCodes = new ArrayList<>();
@@ -69,17 +71,6 @@ public class OfflineWorkflowHandler extends AbstractPublishHandler {
             }
         }
         ThreadParamMapUtils.put(PublishConstants.OFFLINE_WORKFLOW_CODES, offlinedCodes);
-    }
-
-    private Set<String> resolveTargetNames() {
-        Object projectData = ThreadParamMapUtils.get(PublishConstants.PROJECT_DATA);
-        if (projectData instanceof TaskPublishDto dto) {
-            return Set.of(dto.getWorkflowName());
-        }
-        ProjectPublishDto dto = (ProjectPublishDto) projectData;
-        return dto.getWorkflows().stream()
-                .map(WorkflowPublishDto::getName)
-                .collect(Collectors.toSet());
     }
 
     @Override

@@ -18,15 +18,13 @@
 package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
-import io.github.zzih.rudder.dolphin.common.exception.BizException;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.ProjectPublishDto;
-import io.github.zzih.rudder.dolphin.domain.dto.TaskPublishDto;
-import io.github.zzih.rudder.dolphin.service.enums.PublishErrorCode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.dolphinscheduler.dao.entity.AccessToken;
 import org.apache.dolphinscheduler.dao.entity.DagData;
@@ -35,6 +33,7 @@ import org.apache.dolphinscheduler.dao.entity.User;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -43,62 +42,56 @@ public class PublishBeforeHandler extends AbstractPublishHandler {
 
     @Override
     public void handle() {
-        Object projectData = ThreadParamMapUtils.get(PublishConstants.PROJECT_DATA);
-        String projectName;
-        String userName;
-
-        if (projectData instanceof ProjectPublishDto dto) {
-            projectName = dto.getProjectName();
-            userName = dto.getUserName();
-        } else if (projectData instanceof TaskPublishDto dto) {
-            projectName = dto.getProjectName();
-            userName = dto.getUserName();
-            ThreadParamMapUtils.put(PublishConstants.IS_TASK_PUBLISH, true);
-        } else {
-            throw new IllegalArgumentException("Unsupported project data type: " + projectData.getClass());
-        }
+        ProjectPublishBundle bundle = ThreadParamMapUtils.get(PublishConstants.PROJECT_BUNDLE);
+        // Fall back to projectCode when projectName is not provided.
+        String projectName = bundle.getProjectName() != null
+                ? bundle.getProjectName()
+                : String.valueOf(bundle.getProjectCode());
 
         ThreadParamMapUtils.put(PublishConstants.PROJECT_NAME, projectName);
-        setToken(userName);
+        Map<String, Long> wfNameMap = new ConcurrentHashMap<>();
+        ThreadParamMapUtils.put(PublishConstants.PROJECT_WORKFLOW_NAME_MAP, wfNameMap);
+        setToken(bundle.getUserName());
 
-        log.info("Starting publish for project: {}, user: {}", projectName, userName);
+        log.info("Starting publish for project: {}, user: {}", projectName, bundle.getUserName());
 
         Project existingProject = dolphinSchedulerClient.queryProjectByName(projectName);
 
         if (existingProject == null) {
-            boolean isTaskPublish = ThreadParamMapUtils.get(PublishConstants.IS_TASK_PUBLISH, false);
-            if (isTaskPublish) {
-                throw new BizException(PublishErrorCode.PROJECT_NOT_FOUND,
-                        "Project not found: " + projectName);
-            }
             ThreadParamMapUtils.put(PublishConstants.IS_NEW_PROJECT, true);
             log.info("Project '{}' does not exist, will create new", projectName);
-        } else {
-            ThreadParamMapUtils.put(PublishConstants.IS_NEW_PROJECT, false);
-            ThreadParamMapUtils.put(PublishConstants.PROJECT_CODE, existingProject.getCode());
-            ThreadParamMapUtils.put(PublishConstants.OLD_PROJECT, existingProject);
-
-            List<WorkflowDefinition> oldWorkflows = dolphinSchedulerClient.listWorkflows(existingProject.getCode());
-            ThreadParamMapUtils.put(PublishConstants.OLD_WORKFLOW_LIST, oldWorkflows);
-
-            Map<Long, DagData> oldDagDataMap = new HashMap<>();
-            for (WorkflowDefinition wd : oldWorkflows) {
-                try {
-                    DagData dagData = dolphinSchedulerClient.queryWorkflowByCode(
-                            existingProject.getCode(), wd.getCode());
-                    oldDagDataMap.put(wd.getCode(), dagData);
-                } catch (Exception e) {
-                    log.warn("Failed to query old DAG data for workflow: {}", wd.getName(), e);
-                }
-            }
-            ThreadParamMapUtils.put(PublishConstants.OLD_DAG_DATA_MAP, oldDagDataMap);
-
-            log.info("Project '{}' exists with code={}, {} existing workflows",
-                    projectName, existingProject.getCode(), oldWorkflows.size());
+            return;
         }
+
+        ThreadParamMapUtils.put(PublishConstants.IS_NEW_PROJECT, false);
+        ThreadParamMapUtils.put(PublishConstants.PROJECT_CODE, existingProject.getCode());
+        ThreadParamMapUtils.put(PublishConstants.OLD_PROJECT, existingProject);
+
+        // The /workflow-definition/list endpoint already returns DagData (workflow + tasks + relations)
+        // so one round-trip gives us both the workflow list and the rollback snapshots.
+        List<DagData> oldDagDataList = dolphinSchedulerClient.listWorkflowDagData(existingProject.getCode());
+        List<WorkflowDefinition> oldWorkflows = new ArrayList<>();
+        Map<Long, DagData> oldDagDataMap = new HashMap<>();
+        for (DagData dag : oldDagDataList) {
+            WorkflowDefinition wd = dag.getWorkflowDefinition();
+            if (wd == null) {
+                continue;
+            }
+            oldWorkflows.add(wd);
+            oldDagDataMap.put(wd.getCode(), dag);
+            wfNameMap.put(wd.getName(), wd.getCode());
+        }
+        ThreadParamMapUtils.put(PublishConstants.OLD_WORKFLOW_LIST, oldWorkflows);
+        ThreadParamMapUtils.put(PublishConstants.OLD_DAG_DATA_MAP, oldDagDataMap);
+
+        log.info("Project '{}' exists with code={}, {} existing workflows",
+                projectName, existingProject.getCode(), oldWorkflows.size());
     }
 
     private void setToken(String userName) {
+        if (userName == null) {
+            return;
+        }
         User publishUser = dolphinSchedulerClient.listUsers().stream()
                 .filter(user -> userName.equals(user.getUserName()))
                 .findFirst()

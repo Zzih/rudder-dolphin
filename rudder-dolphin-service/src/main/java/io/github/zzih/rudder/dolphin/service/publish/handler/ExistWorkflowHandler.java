@@ -20,8 +20,6 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.exception.BizException;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.ProjectPublishDto;
-import io.github.zzih.rudder.dolphin.domain.dto.WorkflowPublishDto;
 import io.github.zzih.rudder.dolphin.service.enums.PublishErrorCode;
 
 import java.util.ArrayList;
@@ -33,41 +31,39 @@ import java.util.stream.Collectors;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
+import io.github.zzih.rudder.publish.api.bundle.WorkflowBundle;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Splits the bundle's workflows into "needs create" and "needs update" buckets and stashes a
+ * name → bundle lookup so downstream handlers can pull the wire data without re-reading the bundle.
+ */
 @Slf4j
 @Component
 public class ExistWorkflowHandler extends AbstractPublishHandler {
 
     @Override
-    public boolean canHandle() {
-        return !ThreadParamMapUtils.get(PublishConstants.IS_TASK_PUBLISH, false);
-    }
-
-    @Override
     public void handle() {
-        ProjectPublishDto dto = ThreadParamMapUtils.get(PublishConstants.PROJECT_DATA);
+        ProjectPublishBundle bundle = ThreadParamMapUtils.get(PublishConstants.PROJECT_BUNDLE);
         boolean isNewProject = ThreadParamMapUtils.get(PublishConstants.IS_NEW_PROJECT, true);
 
-        Map<String, WorkflowPublishDto> workflowParamMap = new HashMap<>();
-        for (WorkflowPublishDto wf : dto.getWorkflows()) {
-            if (workflowParamMap.containsKey(wf.getName())) {
+        Map<String, WorkflowBundle> bundleMap = new HashMap<>();
+        for (WorkflowBundle wf : bundle.getWorkflows()) {
+            if (bundleMap.containsKey(wf.getName())) {
                 throw new BizException(PublishErrorCode.PUBLISH_FAILED,
                         "Duplicate workflow name: " + wf.getName());
             }
-            workflowParamMap.put(wf.getName(), wf);
+            bundleMap.put(wf.getName(), wf);
         }
-        ThreadParamMapUtils.put(PublishConstants.WORKFLOW_PARAM_MAP, workflowParamMap);
+        ThreadParamMapUtils.put(PublishConstants.WORKFLOW_BUNDLE_MAP, bundleMap);
 
         if (isNewProject) {
-            List<WorkflowDefinition> addList = dto.getWorkflows().stream().map(wf -> {
-                WorkflowDefinition wd = new WorkflowDefinition();
-                wd.setName(wf.getName());
-                wd.setDescription(wf.getDescription());
-                return wd;
-            }).collect(Collectors.toList());
+            List<WorkflowDefinition> addList = bundle.getWorkflows().stream()
+                    .map(this::stubWorkflow)
+                    .collect(Collectors.toList());
             ThreadParamMapUtils.put(PublishConstants.WORKFLOW_ADD_LIST, addList);
-            ThreadParamMapUtils.put(PublishConstants.WORKFLOW_UPDATE_LIST, new ArrayList<>());
+            ThreadParamMapUtils.put(PublishConstants.WORKFLOW_UPDATE_LIST, new ArrayList<WorkflowDefinition>());
             log.info("New project: {} workflows to create", addList.size());
             return;
         }
@@ -80,20 +76,24 @@ public class ExistWorkflowHandler extends AbstractPublishHandler {
         List<WorkflowDefinition> addList = new ArrayList<>();
         List<WorkflowDefinition> updateList = new ArrayList<>();
 
-        for (WorkflowPublishDto wf : dto.getWorkflows()) {
+        for (WorkflowBundle wf : bundle.getWorkflows()) {
             WorkflowDefinition existing = oldWorkflowMap.get(wf.getName());
             if (existing != null) {
                 updateList.add(existing);
             } else {
-                WorkflowDefinition wd = new WorkflowDefinition();
-                wd.setName(wf.getName());
-                wd.setDescription(wf.getDescription());
-                addList.add(wd);
+                addList.add(stubWorkflow(wf));
             }
         }
 
         ThreadParamMapUtils.put(PublishConstants.WORKFLOW_ADD_LIST, addList);
         ThreadParamMapUtils.put(PublishConstants.WORKFLOW_UPDATE_LIST, updateList);
         log.info("Existing project: {} to create, {} to update", addList.size(), updateList.size());
+    }
+
+    private WorkflowDefinition stubWorkflow(WorkflowBundle wf) {
+        WorkflowDefinition wd = new WorkflowDefinition();
+        wd.setName(wf.getName());
+        wd.setDescription(wf.getDescription());
+        return wd;
     }
 }

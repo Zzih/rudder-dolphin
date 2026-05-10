@@ -20,10 +20,12 @@ package io.github.zzih.rudder.dolphin.service.publish.strategy;
 import io.github.zzih.rudder.dolphin.service.publish.handler.CreateProjectHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.CreateScheduleHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.CreateWorkflowHandler;
+import io.github.zzih.rudder.dolphin.service.publish.handler.EnvSyncHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.ExistWorkflowHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.OfflineWorkflowHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.OnlineWorkflowHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.PublishHandler;
+import io.github.zzih.rudder.dolphin.service.publish.handler.ResourceSyncHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.UpdateProjectHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.UpdateScheduleHandler;
 import io.github.zzih.rudder.dolphin.service.publish.handler.UpdateWorkflowHandler;
@@ -36,6 +38,12 @@ import jakarta.annotation.Resource;
 
 @Component
 public class ProjectPublishStrategy extends AbstractPublishStrategy {
+
+    @Resource
+    private EnvSyncHandler envSyncHandler;
+
+    @Resource
+    private ResourceSyncHandler resourceSyncHandler;
 
     @Resource
     private OfflineWorkflowHandler offlineWorkflowHandler;
@@ -66,15 +74,20 @@ public class ProjectPublishStrategy extends AbstractPublishStrategy {
 
     @Override
     protected List<PublishHandler> getMiddleHandlers() {
+        // Workflow must be ONLINE before DS lets us create / update its schedule (DS error 50004:
+        // "workflow definition X workflow version 1 not online"), so onlineWorkflowHandler runs
+        // ahead of the schedule handlers.
         return List.of(
+                envSyncHandler,
+                resourceSyncHandler,
                 offlineWorkflowHandler,
                 createProjectHandler,
                 updateProjectHandler,
                 existWorkflowHandler,
                 createWorkflowHandler,
                 updateWorkflowHandler,
+                onlineWorkflowHandler,
                 createScheduleHandler,
-                updateScheduleHandler,
-                onlineWorkflowHandler);
+                updateScheduleHandler);
     }
 }

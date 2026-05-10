@@ -47,6 +47,7 @@
         <auto-service.version>1.1.1</auto-service.version>
         <dolphinscheduler.version>3.4.1</dolphinscheduler.version>
         <springdoc.version>3.0.3</springdoc.version>
+        <rudder.version>0.1.0-SNAPSHOT</rudder.version>
     </properties>
 
     <dependencyManagement>
@@ -76,6 +77,23 @@
                 <groupId>io.github.zzih</groupId>
                 <artifactId>rudder-dolphin-client</artifactId>
                 <version>${rudder-dolphin.version}</version>
+            </dependency>
+
+            <!-- ==================== Rudder Contract ==================== -->
+            <dependency>
+                <groupId>io.github.zzih</groupId>
+                <artifactId>rudder-publish-api</artifactId>
+                <version>${rudder.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.zzih</groupId>
+                <artifactId>rudder-task-api</artifactId>
+                <version>${rudder.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.zzih</groupId>
+                <artifactId>rudder-common</artifactId>
+                <version>${rudder.version}</version>
             </dependency>
 
             <!-- ==================== Third Party ==================== -->
@@ -108,6 +126,40 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-scalar</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+            <!-- DS task plugins: provide official Parameters POJOs (ShellParameters, PythonParameters,
+                 SeatunnelParameters, SparkParameters, FlinkParameters, HttpParameters). All transitive
+                 deps are <scope>provided</scope> so this brings no extra runtime weight. SQL and
+                 control-flow Parameters already ship in dolphinscheduler-task-api. -->
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-task-shell</artifactId>
+                <version>${dolphinscheduler.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-task-python</artifactId>
+                <version>${dolphinscheduler.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-task-seatunnel</artifactId>
+                <version>${dolphinscheduler.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-task-spark</artifactId>
+                <version>${dolphinscheduler.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-task-flink</artifactId>
+                <version>${dolphinscheduler.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-task-http</artifactId>
+                <version>${dolphinscheduler.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.dolphinscheduler</groupId>

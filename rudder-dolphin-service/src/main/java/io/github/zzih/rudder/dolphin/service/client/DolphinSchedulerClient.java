@@ -20,6 +20,7 @@ package io.github.zzih.rudder.dolphin.service.client;
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.exception.BizException;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
+import io.github.zzih.rudder.dolphin.service.client.dto.DsDatasourceParam;
 import io.github.zzih.rudder.dolphin.service.enums.PublishErrorCode;
 
 import java.text.SimpleDateFormat;
@@ -36,6 +37,7 @@ import org.apache.dolphinscheduler.common.enums.ReleaseState;
 import org.apache.dolphinscheduler.common.enums.WarningType;
 import org.apache.dolphinscheduler.dao.entity.AccessToken;
 import org.apache.dolphinscheduler.dao.entity.DagData;
+import org.apache.dolphinscheduler.dao.entity.DataSource;
 import org.apache.dolphinscheduler.dao.entity.Project;
 import org.apache.dolphinscheduler.dao.entity.Schedule;
 import org.apache.dolphinscheduler.dao.entity.User;
@@ -103,6 +105,13 @@ public class DolphinSchedulerClient {
         return headers;
     }
 
+    private HttpHeaders buildJsonHeaders(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("token", token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return headers;
+    }
+
     public Project queryProjectByName(String projectName) {
         String url = UriComponentsBuilder.fromUriString(baseUrl + "/projects")
                 .queryParam("pageSize", 100)
@@ -137,13 +146,24 @@ public class DolphinSchedulerClient {
         doDelete(url);
     }
 
-    public List<WorkflowDefinition> listWorkflows(long projectCode) {
+    /**
+     * DS's {@code /workflow-definition/list} actually returns a {@code List<DagData>} (each entry
+     * wraps the workflow plus its tasks/relations), so we unwrap to the workflow part.
+     */
+    public List<DagData> listWorkflowDagData(long projectCode) {
         String url = baseUrl + "/projects/" + projectCode + "/workflow-definition/list";
         JsonNode data = doGet(url);
         if (data == null || data.isNull()) {
             return Collections.emptyList();
         }
-        return parseList(data, WorkflowDefinition.class);
+        return parseList(data, DagData.class);
+    }
+
+    public List<WorkflowDefinition> listWorkflows(long projectCode) {
+        return listWorkflowDagData(projectCode).stream()
+                .map(DagData::getWorkflowDefinition)
+                .filter(java.util.Objects::nonNull)
+                .toList();
     }
 
     public DagData queryWorkflowByCode(long projectCode, long workflowCode) {
@@ -153,7 +173,7 @@ public class DolphinSchedulerClient {
     }
 
     public long createWorkflow(long projectCode, String name, String description, Object globalParams,
-                               int timeout, String taskDefinitionJson, String taskRelationJson) {
+                               int timeout, String taskDefinitionJson, String taskRelationJson, String locations) {
         String url = baseUrl + "/projects/" + projectCode + "/workflow-definition";
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("name", name);
@@ -162,15 +182,20 @@ public class DolphinSchedulerClient {
         params.add("timeout", String.valueOf(timeout));
         params.add("taskDefinitionJson", taskDefinitionJson);
         params.add("taskRelationJson", taskRelationJson);
-        params.add("locations", "");
+        params.add("locations", locations != null ? locations : "");
         params.add("executionType", DEFAULT_EXECUTION_TYPE);
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "DS createWorkflow request: projectCode={}, name={}, taskDefinitionJson={}, taskRelationJson={}, locations={}",
+                    projectCode, name, taskDefinitionJson, taskRelationJson, locations);
+        }
         WorkflowDefinition wd = doPost(url, params, WorkflowDefinition.class);
         return wd.getCode();
     }
 
     public DagData updateWorkflow(long projectCode, long workflowCode, String name, String description,
                                   Object globalParams, int timeout, ReleaseState releaseState,
-                                  String taskDefinitionJson, String taskRelationJson) {
+                                  String taskDefinitionJson, String taskRelationJson, String locations) {
         String url = baseUrl + "/projects/" + projectCode + "/workflow-definition/" + workflowCode;
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("name", name);
@@ -179,7 +204,7 @@ public class DolphinSchedulerClient {
         params.add("timeout", String.valueOf(timeout));
         params.add("taskDefinitionJson", taskDefinitionJson);
         params.add("taskRelationJson", taskRelationJson);
-        params.add("locations", "");
+        params.add("locations", locations != null ? locations : "");
         params.add("releaseState", releaseState.name());
         params.add("executionType", DEFAULT_EXECUTION_TYPE);
         return doPut(url, params, DagData.class);
@@ -190,9 +215,9 @@ public class DolphinSchedulerClient {
      */
     public DagData updateWorkflow(long projectCode, long workflowCode, String name, String description,
                                   Object globalParams, int timeout, ReleaseState releaseState,
-                                  List<?> taskDefinitions, List<?> taskRelations) {
+                                  List<?> taskDefinitions, List<?> taskRelations, String locations) {
         return updateWorkflow(projectCode, workflowCode, name, description, globalParams, timeout,
-                releaseState, serializeTaskDefinitions(taskDefinitions), toJson(taskRelations));
+                releaseState, serializeTaskDefinitions(taskDefinitions), toJson(taskRelations), locations);
     }
 
     public void deleteWorkflow(long projectCode, long workflowCode) {
@@ -252,6 +277,87 @@ public class DolphinSchedulerClient {
 
     public void deleteSchedule(long projectCode, int scheduleId) {
         String url = baseUrl + "/projects/" + projectCode + "/schedules/" + scheduleId;
+        doDelete(url);
+    }
+
+    public List<DataSource> listDatasources() {
+        String url = UriComponentsBuilder.fromUriString(baseUrl + "/datasources")
+                .queryParam("pageSize", 9999)
+                .queryParam("pageNo", 1)
+                .toUriString();
+        return extractPaginatedList(doGet(url), DataSource.class);
+    }
+
+    public DataSource createDatasource(DsDatasourceParam param) {
+        return doPostJson(baseUrl + "/datasources", toJson(param), DataSource.class);
+    }
+
+    public DataSource updateDatasource(int id, DsDatasourceParam param) {
+        return doPutJson(baseUrl + "/datasources/" + id, toJson(param), DataSource.class);
+    }
+
+    /** 列出 DS 资源中心所有 FILE 资源。返回的是树形结构,需要展平后才能按 fullName 索引。 */
+    public JsonNode listFileResources() {
+        String url = baseUrl + "/resources/list?type=FILE";
+        return doGet(url);
+    }
+
+    /**
+     * 查询当前用户(token 对应)tenant 在 DS 资源中心的根绝对路径。DS 资源中心按 tenant 隔离,所有
+     * createResource / createDirectory 的 {@code currentDir} 必须以这个根开头(或填特殊值 {@code "/"}
+     * 由 DS 自动转译,但这只对 directory 接口好使,对 file 上传不通用)。先拿到根,再拼绝对路径上传,
+     * 是跨 local / S3 / OSS 后端都成立的最稳路径。
+     */
+    public String queryResourceBaseDir(String type) {
+        String url = baseUrl + "/resources/base-dir?type=" + type;
+        JsonNode data = doGet(url);
+        if (data == null || data.isNull()) {
+            throw new BizException(PublishErrorCode.DS_API_ERROR,
+                    "DS /resources/base-dir returned empty for type=" + type);
+        }
+        return data.asText();
+    }
+
+    /**
+     * 上传文件到 DS 资源中心 ({@code POST /resources}, multipart/form-data)。
+     * DS 接口返回 {@code Result<Void>},不带 fullName,所以调用侧需要按 {@code currentDir + name} 自行拼装。
+     */
+    public void createResourceFile(String name, String currentDir, byte[] content) {
+        String url = baseUrl + "/resources";
+        MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+        form.add("type", "FILE");
+        form.add("name", name);
+        form.add("currentDir", currentDir);
+        form.add("file", new org.springframework.core.io.ByteArrayResource(content) {
+
+            @Override
+            public String getFilename() {
+                return name;
+            }
+        });
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("token", getToken());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(form, headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+        extractData(response.getBody(), url);
+    }
+
+    /** 创建目录 ({@code POST /resources/directory}),DS 不允许向不存在的目录上传文件。 */
+    public void createResourceDirectory(String name, String currentDir) {
+        String url = baseUrl + "/resources/directory";
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("type", "FILE");
+        params.add("name", name);
+        params.add("currentDir", currentDir);
+        doPost(url, params, Object.class);
+    }
+
+    public void deleteResource(String fullName) {
+        String url = UriComponentsBuilder.fromUriString(baseUrl + "/resources")
+                .queryParam("fullName", fullName)
+                .toUriString();
         doDelete(url);
     }
 
@@ -344,6 +450,20 @@ public class DolphinSchedulerClient {
         HttpEntity<Void> entity = new HttpEntity<>(currentHeaders());
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
         extractData(response.getBody(), url);
+    }
+
+    private <T> T doPostJson(String url, String body, Class<T> clazz) {
+        HttpEntity<String> entity = new HttpEntity<>(body, buildJsonHeaders(getToken()));
+        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+        JsonNode data = extractData(response.getBody(), url);
+        return parseObject(data, clazz);
+    }
+
+    private <T> T doPutJson(String url, String body, Class<T> clazz) {
+        HttpEntity<String> entity = new HttpEntity<>(body, buildJsonHeaders(getToken()));
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, entity, String.class);
+        JsonNode data = extractData(response.getBody(), url);
+        return parseObject(data, clazz);
     }
 
     private JsonNode extractData(String body, String url) {

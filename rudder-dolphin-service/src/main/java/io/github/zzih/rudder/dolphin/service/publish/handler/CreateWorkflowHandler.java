@@ -19,8 +19,8 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.WorkflowPublishDto;
-import io.github.zzih.rudder.dolphin.service.task.TaskDefinitionConverter;
+import io.github.zzih.rudder.dolphin.domain.result.PublishResult.WorkflowResult;
+import io.github.zzih.rudder.dolphin.service.publish.adapter.WorkflowDefinitionAssembler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.WorkflowBundle;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CreateWorkflowHandler extends AbstractPublishHandler {
 
     @Resource
-    private TaskDefinitionConverter taskDefinitionConverter;
+    private WorkflowDefinitionAssembler assembler;
 
     @Override
     public boolean canHandle() {
@@ -48,36 +49,43 @@ public class CreateWorkflowHandler extends AbstractPublishHandler {
     public void handle() {
         long projectCode = ThreadParamMapUtils.get(PublishConstants.PROJECT_CODE);
         List<WorkflowDefinition> addList = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_ADD_LIST);
-        Map<String, WorkflowPublishDto> paramMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_PARAM_MAP);
+        Map<String, WorkflowBundle> bundleMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_BUNDLE_MAP);
+        Map<String, Long> wfNameMap = ThreadParamMapUtils.get(PublishConstants.PROJECT_WORKFLOW_NAME_MAP);
 
         List<Long> createdCodes = new ArrayList<>();
-
+        List<WorkflowResult> outcomes = ThreadParamMapUtils.get(
+                PublishConstants.WORKFLOW_OUTCOMES, new ArrayList<>());
         for (WorkflowDefinition wd : addList) {
-            WorkflowPublishDto wfParam = paramMap.get(wd.getName());
-            if (wfParam == null) {
+            WorkflowBundle wf = bundleMap.get(wd.getName());
+            if (wf == null) {
                 continue;
             }
 
-            String taskDefinitionJson = taskDefinitionConverter.convertToJson(wfParam.getTaskDefinitions());
-            String taskRelationJson = taskDefinitionConverter.toJson(wfParam.getTaskRelations());
+            WorkflowDefinitionAssembler.Assembled parts = assembler.assemble(wf);
 
-            log.info("Creating workflow: {}", wd.getName());
+            log.info("Creating workflow: {}", wf.getName());
             long workflowCode = dolphinSchedulerClient.createWorkflow(
                     projectCode,
-                    wfParam.getName(),
-                    wfParam.getDescription() != null ? wfParam.getDescription() : "",
-                    wfParam.getGlobalParams(),
-                    wfParam.getTimeout() != null ? wfParam.getTimeout() : 0,
-                    taskDefinitionJson,
-                    taskRelationJson);
+                    wf.getName(),
+                    wf.getDescription() != null ? wf.getDescription() : "",
+                    wf.getGlobalParams(),
+                    0,
+                    parts.taskDefinitionJson(),
+                    parts.taskRelationJson(),
+                    parts.locations());
 
             wd.setCode(workflowCode);
             wd.setProjectCode(projectCode);
             createdCodes.add(workflowCode);
-            log.info("Workflow created: name={}, code={}", wd.getName(), workflowCode);
+            if (wfNameMap != null) {
+                wfNameMap.put(wf.getName(), workflowCode);
+            }
+            outcomes.add(new WorkflowResult(wf.getName(), workflowCode, WorkflowResult.Action.CREATED));
+            log.info("Workflow created: name={}, code={}", wf.getName(), workflowCode);
         }
 
         ThreadParamMapUtils.put(PublishConstants.CREATED_WORKFLOW_CODES, createdCodes);
+        ThreadParamMapUtils.put(PublishConstants.WORKFLOW_OUTCOMES, outcomes);
     }
 
     @Override

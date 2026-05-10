@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-package io.github.zzih.rudder.dolphin.service.publish;
+package io.github.zzih.rudder.dolphin.service.publish.adapter;
 
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
-
-import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
-import io.github.zzih.rudder.publish.api.bundle.WorkflowPublishBundle;
-
-public interface PublishService {
-
-    /** Full project publish — every existing workflow not covered by the bundle is taken offline. */
-    PublishResult publishProject(ProjectPublishBundle bundle);
-
-    /** Single workflow incremental publish. */
-    PublishResult publishWorkflow(WorkflowPublishBundle bundle);
+/**
+ * One node entry in DolphinScheduler's workflow {@code locations} JSON array. DS doesn't expose a
+ * dedicated POJO for this on-wire shape — it consumes the array as raw {@code JsonNode} — so we
+ * keep our own typed record to stay consistent with the rest of the publish adapter (no raw maps).
+ */
+public record DagLocation(long taskCode, int x, int y) {
 }

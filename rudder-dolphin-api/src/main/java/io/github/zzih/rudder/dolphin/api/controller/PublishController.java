@@ -18,28 +18,25 @@
 package io.github.zzih.rudder.dolphin.api.controller;
 
 import io.github.zzih.rudder.dolphin.common.result.Result;
-import io.github.zzih.rudder.dolphin.domain.dto.ProjectPublishDto;
-import io.github.zzih.rudder.dolphin.domain.dto.TaskPublishDto;
-import io.github.zzih.rudder.dolphin.domain.dto.WorkflowPublishDto;
-import io.github.zzih.rudder.dolphin.domain.qo.ProjectPublishRequest;
-import io.github.zzih.rudder.dolphin.domain.qo.TaskPublishRequest;
-import io.github.zzih.rudder.dolphin.domain.qo.WorkflowParam;
-import io.github.zzih.rudder.dolphin.domain.qo.WorkflowPublishRequest;
+import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
 import io.github.zzih.rudder.dolphin.service.publish.PublishService;
-
-import java.util.Collections;
-import java.util.List;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
+import io.github.zzih.rudder.publish.api.bundle.WorkflowPublishBundle;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Publish endpoints — wire format is the Rudder publish contract bundle types
+ * (see docs/RUDDER_PUBLISH_CONTRACT.md). Server-side adaptation to DolphinScheduler is delegated
+ * to {@link PublishService}.
+ */
 @Tag(name = "Publish", description = "工作流发布接口")
 @RestController
 @RequestMapping("/publish")
@@ -50,43 +47,13 @@ public class PublishController {
 
     @Operation(summary = "项目发布", description = "全量发布项目下所有工作流及调度")
     @PostMapping("/project")
-    public Result<Void> publishProject(@Valid @RequestBody ProjectPublishRequest request) {
-        List<WorkflowPublishDto> workflows = request.getWorkflows().stream()
-                .map(this::toWorkflowDto)
-                .toList();
-        publishService.publishProject(
-                new ProjectPublishDto(request.getProjectName(), request.getDescription(),
-                        request.getUserName(), workflows));
-        return Result.ok();
+    public Result<PublishResult> publishProject(@RequestBody ProjectPublishBundle bundle) {
+        return Result.ok(publishService.publishProject(bundle));
     }
 
     @Operation(summary = "工作流发布", description = "增量发布单个工作流及调度")
     @PostMapping("/workflow")
-    public Result<Void> publishWorkflow(@Valid @RequestBody WorkflowPublishRequest request) {
-        publishService.publishWorkflow(
-                new ProjectPublishDto(request.getProjectName(), request.getDescription(),
-                        request.getUserName(), Collections.singletonList(toWorkflowDto(request.getWorkflow()))));
-        return Result.ok();
-    }
-
-    @Operation(summary = "任务发布", description = "更新指定工作流的任务列表")
-    @PostMapping("/task")
-    public Result<Void> publishTask(@Valid @RequestBody TaskPublishRequest request) {
-        publishService.publishTask(
-                new TaskPublishDto(request.getProjectName(), request.getUserName(), request.getWorkflowName(),
-                        request.getTaskDefinitions(), request.getTaskRelations()));
-        return Result.ok();
-    }
-
-    private WorkflowPublishDto toWorkflowDto(WorkflowParam wf) {
-        return WorkflowPublishDto.builder()
-                .name(wf.getName())
-                .description(wf.getDescription())
-                .globalParams(wf.getGlobalParams())
-                .timeout(wf.getTimeout())
-                .taskDefinitions(wf.getTaskDefinitions())
-                .taskRelations(wf.getTaskRelations())
-                .schedule(wf.getSchedule())
-                .build();
+    public Result<PublishResult> publishWorkflow(@RequestBody WorkflowPublishBundle bundle) {
+        return Result.ok(publishService.publishWorkflow(bundle));
     }
 }

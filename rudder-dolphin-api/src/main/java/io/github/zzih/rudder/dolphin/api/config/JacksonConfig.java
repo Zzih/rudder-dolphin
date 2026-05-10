@@ -39,7 +39,7 @@ import tools.jackson.databind.module.SimpleModule;
  * 统一格式化为 "yyyy-MM-dd HH:mm:ss" / "yyyy-MM-dd"。
  * <p>
  * 同时补一个 Jackson 2 ObjectMapper Bean —— Boot 4 默认只 autoconfigure Jackson 3，
- * 业务代码（AuthInterceptor / DolphinSchedulerClient / TaskDefinitionConverter 等）
+ * 业务代码（AuthInterceptor / DolphinSchedulerClient / publish adapters 等）
  * 仍 {@code @Autowired} Jackson 2 {@link ObjectMapper}，由此显式注册。
  */
 @Configuration
@@ -60,11 +60,16 @@ public class JacksonConfig {
     @Bean
     public JsonMapperBuilderCustomizer rudderDolphinJsonMapperCustomizer() {
         return builder -> {
+            // HTTP responses keep the legacy "yyyy-MM-dd HH:mm:ss" form for human readability,
+            // but inbound Rudder bundle JSON uses ISO-8601 (LocalDateTime#toString) per the publish
+            // contract — accept that on deserialize so ScheduleBundle.startTime / endTime parse cleanly.
             SimpleModule module = new SimpleModule("rudder-dolphin-datetime")
                     .addSerializer(new LocalDateTimeSerializer(DATETIME_FORMATTER))
-                    .addDeserializer(java.time.LocalDateTime.class, new LocalDateTimeDeserializer(DATETIME_FORMATTER))
+                    .addDeserializer(java.time.LocalDateTime.class,
+                            new LocalDateTimeDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                     .addSerializer(new LocalDateSerializer(DATE_FORMATTER))
-                    .addDeserializer(java.time.LocalDate.class, new LocalDateDeserializer(DATE_FORMATTER));
+                    .addDeserializer(java.time.LocalDate.class,
+                            new LocalDateDeserializer(DateTimeFormatter.ISO_LOCAL_DATE));
             builder.addModule(module);
         };
     }

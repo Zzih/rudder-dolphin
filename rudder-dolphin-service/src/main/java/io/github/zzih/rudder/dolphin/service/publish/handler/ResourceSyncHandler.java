@@ -19,46 +19,43 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult.ProjectOutcome;
+import io.github.zzih.rudder.dolphin.service.env.ResourceSynchronizer;
 
-import org.apache.dolphinscheduler.dao.entity.Project;
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
+import io.github.zzih.rudder.publish.api.bundle.ResourceBundle;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 把 {@code bundle.resources} 同步到 DolphinScheduler 资源中心。跑在 {@link EnvSyncHandler} 之后、
+ * {@code OfflineWorkflowHandler} / {@code CreateWorkflowHandler} 之前 —— 创建工作流时 jar 任务的
+ * mainJar 必须已经能在 DS 资源中心解析到 fullName。
+ */
 @Slf4j
 @Component
-public class CreateProjectHandler extends AbstractPublishHandler {
+public class ResourceSyncHandler extends AbstractPublishHandler {
+
+    @Resource
+    private ResourceSynchronizer resourceSynchronizer;
 
     @Override
     public boolean canHandle() {
-        return ThreadParamMapUtils.get(PublishConstants.IS_NEW_PROJECT, false);
+        ProjectPublishBundle bundle = ThreadParamMapUtils.get(PublishConstants.PROJECT_BUNDLE);
+        List<ResourceBundle> resources = bundle != null ? bundle.getResources() : null;
+        return resources != null && !resources.isEmpty();
     }
 
     @Override
     public void handle() {
         ProjectPublishBundle bundle = ThreadParamMapUtils.get(PublishConstants.PROJECT_BUNDLE);
-        String projectName = ThreadParamMapUtils.get(PublishConstants.PROJECT_NAME);
-        String description = bundle.getProjectDescription() != null ? bundle.getProjectDescription() : "";
-
-        log.info("Creating project: {}", projectName);
-        Project project = dolphinSchedulerClient.createProject(projectName, description);
-        ThreadParamMapUtils.put(PublishConstants.PROJECT_CODE, project.getCode());
-        ThreadParamMapUtils.put(PublishConstants.PROJECT_OUTCOME, ProjectOutcome.CREATED);
-        log.info("Project created: name={}, code={}", projectName, project.getCode());
-    }
-
-    @Override
-    public void rollBack() {
-        Long projectCode = ThreadParamMapUtils.get(PublishConstants.PROJECT_CODE);
-        if (projectCode != null) {
-            log.info("Rolling back: deleting project code={}", projectCode);
-            try {
-                dolphinSchedulerClient.deleteProject(projectCode);
-            } catch (Exception e) {
-                log.error("Failed to rollback project deletion: code={}", projectCode, e);
-            }
-        }
+        List<ResourceBundle> resources = bundle.getResources();
+        log.info("Syncing {} resources before publish", resources.size());
+        ResourceSynchronizer.Summary summary = resourceSynchronizer.upsertAll(resources);
+        ThreadParamMapUtils.put(PublishConstants.RESOURCES_UPLOADED, summary.uploaded());
+        ThreadParamMapUtils.put(PublishConstants.RESOURCES_SKIPPED, summary.skipped());
     }
 }

@@ -19,9 +19,10 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.WorkflowPublishDto;
-import io.github.zzih.rudder.dolphin.service.task.TaskDefinitionConverter;
+import io.github.zzih.rudder.dolphin.domain.result.PublishResult.WorkflowResult;
+import io.github.zzih.rudder.dolphin.service.publish.adapter.WorkflowDefinitionAssembler;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +31,7 @@ import org.apache.dolphinscheduler.dao.entity.DagData;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.WorkflowBundle;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UpdateWorkflowHandler extends AbstractPublishHandler {
 
     @Resource
-    private TaskDefinitionConverter taskDefinitionConverter;
+    private WorkflowDefinitionAssembler assembler;
 
     @Override
     public boolean canHandle() {
@@ -49,30 +51,34 @@ public class UpdateWorkflowHandler extends AbstractPublishHandler {
     public void handle() {
         long projectCode = ThreadParamMapUtils.get(PublishConstants.PROJECT_CODE);
         List<WorkflowDefinition> updateList = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_UPDATE_LIST);
-        Map<String, WorkflowPublishDto> paramMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_PARAM_MAP);
+        Map<String, WorkflowBundle> bundleMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_BUNDLE_MAP);
+        List<WorkflowResult> outcomes = ThreadParamMapUtils.get(
+                PublishConstants.WORKFLOW_OUTCOMES, new ArrayList<>());
 
         for (WorkflowDefinition wd : updateList) {
-            WorkflowPublishDto wfParam = paramMap.get(wd.getName());
-            if (wfParam == null) {
+            WorkflowBundle wf = bundleMap.get(wd.getName());
+            if (wf == null) {
                 continue;
             }
 
-            String taskDefinitionJson = taskDefinitionConverter.convertToJson(wfParam.getTaskDefinitions());
-            String taskRelationJson = taskDefinitionConverter.toJson(wfParam.getTaskRelations());
+            WorkflowDefinitionAssembler.Assembled parts = assembler.assemble(wf);
 
-            log.info("Updating workflow: name={}, code={}", wd.getName(), wd.getCode());
+            log.info("Updating workflow: name={}, code={}", wf.getName(), wd.getCode());
             dolphinSchedulerClient.updateWorkflow(
                     projectCode,
                     wd.getCode(),
-                    wfParam.getName(),
-                    wfParam.getDescription() != null ? wfParam.getDescription() : "",
-                    wfParam.getGlobalParams(),
-                    wfParam.getTimeout() != null ? wfParam.getTimeout() : 0,
+                    wf.getName(),
+                    wf.getDescription() != null ? wf.getDescription() : "",
+                    wf.getGlobalParams(),
+                    0,
                     ReleaseState.OFFLINE,
-                    taskDefinitionJson,
-                    taskRelationJson);
-            log.info("Workflow updated: name={}, code={}", wd.getName(), wd.getCode());
+                    parts.taskDefinitionJson(),
+                    parts.taskRelationJson(),
+                    parts.locations());
+            outcomes.add(new WorkflowResult(wf.getName(), wd.getCode(), WorkflowResult.Action.UPDATED));
+            log.info("Workflow updated: name={}, code={}", wf.getName(), wd.getCode());
         }
+        ThreadParamMapUtils.put(PublishConstants.WORKFLOW_OUTCOMES, outcomes);
     }
 
     @Override

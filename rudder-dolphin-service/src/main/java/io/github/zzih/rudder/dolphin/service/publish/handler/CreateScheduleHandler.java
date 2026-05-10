@@ -19,9 +19,7 @@ package io.github.zzih.rudder.dolphin.service.publish.handler;
 
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
-import io.github.zzih.rudder.dolphin.domain.dto.WorkflowPublishDto;
-import io.github.zzih.rudder.dolphin.domain.qo.ScheduleParam;
-import io.github.zzih.rudder.dolphin.service.publish.util.ScheduleJsonBuilder;
+import io.github.zzih.rudder.dolphin.service.publish.adapter.ScheduleAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +29,16 @@ import org.apache.dolphinscheduler.dao.entity.Schedule;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 import org.springframework.stereotype.Component;
 
+import io.github.zzih.rudder.publish.api.bundle.WorkflowBundle;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class CreateScheduleHandler extends AbstractPublishHandler {
+
+    @Resource
+    private ScheduleAdapter scheduleAdapter;
 
     @Override
     public boolean canHandle() {
@@ -46,23 +49,24 @@ public class CreateScheduleHandler extends AbstractPublishHandler {
     public void handle() {
         long projectCode = ThreadParamMapUtils.get(PublishConstants.PROJECT_CODE);
         List<WorkflowDefinition> addList = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_ADD_LIST);
-        Map<String, WorkflowPublishDto> paramMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_PARAM_MAP);
+        Map<String, WorkflowBundle> bundleMap = ThreadParamMapUtils.get(PublishConstants.WORKFLOW_BUNDLE_MAP);
 
         List<Integer> createdScheduleIds = new ArrayList<>();
 
         for (WorkflowDefinition wd : addList) {
-            WorkflowPublishDto wfParam = paramMap.get(wd.getName());
-            if (wfParam == null || wfParam.getSchedule() == null) {
+            WorkflowBundle wf = bundleMap.get(wd.getName());
+            if (wf == null || wf.getSchedule() == null) {
                 continue;
             }
 
-            ScheduleParam scheduleParam = wfParam.getSchedule();
-            String scheduleJson = ScheduleJsonBuilder.build(scheduleParam);
+            String scheduleJson = scheduleAdapter.toDsScheduleJson(wf.getSchedule());
+            boolean online = shouldOnline(wf.getSchedule());
 
-            log.info("Creating schedule for workflow: name={}, crontab={}", wd.getName(), scheduleParam.getCrontab());
-            Schedule schedule = createAndOnlineSchedule(projectCode, wd.getCode(), scheduleJson);
+            log.info("Creating schedule for workflow: name={}, cron={}, status={}",
+                    wf.getName(), wf.getSchedule().getCronExpression(), online ? "ONLINE" : "OFFLINE");
+            Schedule schedule = createSchedule(projectCode, wd.getCode(), scheduleJson, online);
             createdScheduleIds.add(schedule.getId());
-            log.info("Schedule created and onlined for workflow: {}", wd.getName());
+            log.info("Schedule created for workflow: {} (online={})", wf.getName(), online);
         }
 
         ThreadParamMapUtils.put(PublishConstants.CREATED_SCHEDULE_IDS, createdScheduleIds);
