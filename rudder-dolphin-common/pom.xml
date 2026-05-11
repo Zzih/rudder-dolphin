@@ -12,6 +12,11 @@
     <artifactId>rudder-dolphin-common</artifactId>
     <name>Rudder Dolphin Common</name>
 
+    <properties>
+        <!-- Internal module, not published to Maven Central. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

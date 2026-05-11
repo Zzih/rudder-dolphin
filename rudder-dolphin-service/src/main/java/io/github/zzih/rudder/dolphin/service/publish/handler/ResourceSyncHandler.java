@@ -17,6 +17,8 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.handler;
 
+import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.ResourceBundle;
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
 import io.github.zzih.rudder.dolphin.service.env.ResourceSynchronizer;
@@ -25,8 +27,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
-import io.github.zzih.rudder.dolphin.client.model.ResourceBundle;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 

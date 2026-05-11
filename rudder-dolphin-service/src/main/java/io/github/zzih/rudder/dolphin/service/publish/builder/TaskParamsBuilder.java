@@ -17,11 +17,11 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.builder;
 
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
+
 import java.util.Map;
 
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
-
-import io.github.zzih.rudder.dolphin.client.model.TaskType;
 
 /**
  * Per-task-type adapter from Rudder {@code scriptContent} (parsed as a Map) into the
