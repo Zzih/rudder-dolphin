@@ -15,18 +15,33 @@
  * limitations under the License.
  */
 
-package io.github.zzih.rudder.dolphin.service.publish;
+package io.github.zzih.rudder.dolphin.client.model;
 
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
-import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
+/** Single task snapshot at publish time; {@code scriptContent} is the task config JSON, parsed by the receiver. */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TaskBundle {
 
-public interface PublishService {
+    private Long taskCode;
 
-    /** Full project publish — every existing workflow not covered by the bundle is taken offline. */
-    PublishResult publishProject(ProjectPublishBundle bundle);
+    private String name;
 
-    /** Single workflow incremental publish. */
-    PublishResult publishWorkflow(WorkflowPublishBundle bundle);
+    private String description;
+
+    private TaskType taskType;
+
+    private String scriptContent;
+
+    private Integer retryTimes;
+
+    private Integer retryInterval;
+
+    private Integer timeout;
 }

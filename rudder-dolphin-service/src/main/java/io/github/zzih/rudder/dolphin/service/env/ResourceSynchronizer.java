@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import io.github.zzih.rudder.publish.api.bundle.ResourceBundle;
+import io.github.zzih.rudder.dolphin.client.model.ResourceBundle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

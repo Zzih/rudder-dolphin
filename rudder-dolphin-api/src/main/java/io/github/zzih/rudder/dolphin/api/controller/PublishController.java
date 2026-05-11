@@ -26,8 +26,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
-import io.github.zzih.rudder.publish.api.bundle.WorkflowPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

@@ -16,6 +16,7 @@
     <packaging>pom</packaging>
     <name>Rudder Dolphin</name>
     <description>Rudder Workflow publishing and scheduling management platform for DolphinScheduler</description>
+    <url>https://github.com/Zzih/rudder-dolphin</url>
 
     <licenses>
         <license>
@@ -24,6 +25,21 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <developers>
+        <developer>
+            <id>zzih</id>
+            <email>Zzzih96@gmail.com</email>
+            <url>https://github.com/Zzih</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/Zzih/rudder-dolphin.git</connection>
+        <developerConnection>scm:git:git@github.com:Zzih/rudder-dolphin.git</developerConnection>
+        <url>https://github.com/Zzih/rudder-dolphin</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <modules>
         <module>rudder-dolphin-common</module>
@@ -47,7 +63,6 @@
         <auto-service.version>1.1.1</auto-service.version>
         <dolphinscheduler.version>3.4.1</dolphinscheduler.version>
         <springdoc.version>3.0.3</springdoc.version>
-        <rudder.version>0.1.0-SNAPSHOT</rudder.version>
     </properties>
 
     <dependencyManagement>
@@ -77,23 +92,6 @@
                 <groupId>io.github.zzih</groupId>
                 <artifactId>rudder-dolphin-client</artifactId>
                 <version>${rudder-dolphin.version}</version>
-            </dependency>
-
-            <!-- ==================== Rudder Contract ==================== -->
-            <dependency>
-                <groupId>io.github.zzih</groupId>
-                <artifactId>rudder-publish-api</artifactId>
-                <version>${rudder.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.zzih</groupId>
-                <artifactId>rudder-task-api</artifactId>
-                <version>${rudder.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.zzih</groupId>
-                <artifactId>rudder-common</artifactId>
-                <version>${rudder.version}</version>
             </dependency>
 
             <!-- ==================== Third Party ==================== -->
@@ -319,4 +317,66 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals><goal>jar-no-fork</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals><goal>jar</goal></goals>
+                                <configuration>
+                                    <doclint>none</doclint>
+                                    <failOnError>false</failOnError>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals><goal>sign</goal></goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
