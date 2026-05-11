@@ -15,18 +15,9 @@
  * limitations under the License.
  */
 
-package io.github.zzih.rudder.dolphin.service.publish;
+package io.github.zzih.rudder.dolphin.client.model;
 
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
-
-import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
-import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
-
-public interface PublishService {
-
-    /** Full project publish — every existing workflow not covered by the bundle is taken offline. */
-    PublishResult publishProject(ProjectPublishBundle bundle);
-
-    /** Single workflow incremental publish. */
-    PublishResult publishWorkflow(WorkflowPublishBundle bundle);
+public enum ExecutionMode {
+    BATCH,
+    STREAMING
 }

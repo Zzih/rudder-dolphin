@@ -24,7 +24,7 @@ import io.github.zzih.rudder.dolphin.domain.result.PublishResult.ProjectOutcome;
 import org.apache.dolphinscheduler.dao.entity.Project;
 import org.springframework.stereotype.Component;
 
-import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

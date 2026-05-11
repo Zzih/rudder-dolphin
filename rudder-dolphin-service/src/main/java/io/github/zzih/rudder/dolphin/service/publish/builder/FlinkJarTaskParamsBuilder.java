@@ -30,7 +30,7 @@ import org.apache.dolphinscheduler.plugin.task.flink.FlinkParameters;
 import org.apache.dolphinscheduler.plugin.task.flink.ProgramType;
 import org.springframework.stereotype.Component;
 
-import io.github.zzih.rudder.task.api.task.enums.TaskType;
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import lombok.RequiredArgsConstructor;
 
 /**

@@ -15,18 +15,30 @@
  * limitations under the License.
  */
 
-package io.github.zzih.rudder.dolphin.service.publish;
+package io.github.zzih.rudder.dolphin.client.model;
 
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
+import java.io.Serializable;
 
-import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
-import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public interface PublishService {
+/**
+ * Workflow global parameter — mirror of Rudder's {@code io.github.zzih.rudder.common.param.Property}.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Property implements Serializable {
 
-    /** Full project publish — every existing workflow not covered by the bundle is taken offline. */
-    PublishResult publishProject(ProjectPublishBundle bundle);
+    private String prop;
 
-    /** Single workflow incremental publish. */
-    PublishResult publishWorkflow(WorkflowPublishBundle bundle);
+    private Direct direct;
+
+    @Builder.Default
+    private DataType type = DataType.VARCHAR;
+
+    private String value;
 }

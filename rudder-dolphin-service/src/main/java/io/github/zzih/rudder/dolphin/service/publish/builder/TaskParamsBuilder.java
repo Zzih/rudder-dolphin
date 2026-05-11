@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
 
-import io.github.zzih.rudder.task.api.task.enums.TaskType;
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
 
 /**
  * Per-task-type adapter from Rudder {@code scriptContent} (parsed as a Map) into the

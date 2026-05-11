@@ -12,6 +12,11 @@
     <artifactId>rudder-dolphin-api</artifactId>
     <name>Rudder Dolphin API</name>
 
+    <properties>
+        <!-- Server-side bootable jar — not a library, skip Sonatype Central publish. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <!-- Spring Boot -->
         <dependency>

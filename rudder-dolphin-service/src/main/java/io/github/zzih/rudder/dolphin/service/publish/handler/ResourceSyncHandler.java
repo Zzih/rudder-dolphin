@@ -25,8 +25,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
-import io.github.zzih.rudder.publish.api.bundle.ResourceBundle;
+import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.ResourceBundle;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 

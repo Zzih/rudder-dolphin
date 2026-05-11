@@ -27,8 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
-import io.github.zzih.rudder.publish.api.bundle.WorkflowPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -17,7 +17,7 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.adapter;
 
-import io.github.zzih.rudder.task.api.task.enums.TaskType;
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
 
 /**
  * Rudder {@link TaskType} → DolphinScheduler taskType string.

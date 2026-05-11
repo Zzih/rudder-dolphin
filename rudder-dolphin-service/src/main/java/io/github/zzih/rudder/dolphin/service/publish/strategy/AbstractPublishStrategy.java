@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import io.github.zzih.rudder.publish.api.bundle.ProjectPublishBundle;
+import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

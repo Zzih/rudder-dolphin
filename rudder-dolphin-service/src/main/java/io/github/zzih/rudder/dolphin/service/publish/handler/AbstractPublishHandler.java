@@ -31,7 +31,7 @@ import org.apache.dolphinscheduler.dao.entity.DagData;
 import org.apache.dolphinscheduler.dao.entity.Schedule;
 import org.apache.dolphinscheduler.dao.entity.WorkflowDefinition;
 
-import io.github.zzih.rudder.publish.api.bundle.ScheduleBundle;
+import io.github.zzih.rudder.dolphin.client.model.ScheduleBundle;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 

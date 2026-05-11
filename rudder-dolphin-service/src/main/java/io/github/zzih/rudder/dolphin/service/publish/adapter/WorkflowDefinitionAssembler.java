@@ -38,9 +38,9 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.zzih.rudder.publish.api.bundle.EdgeBundle;
-import io.github.zzih.rudder.publish.api.bundle.TaskBundle;
-import io.github.zzih.rudder.publish.api.bundle.WorkflowBundle;
+import io.github.zzih.rudder.dolphin.client.model.EdgeBundle;
+import io.github.zzih.rudder.dolphin.client.model.TaskBundle;
+import io.github.zzih.rudder.dolphin.client.model.WorkflowBundle;
 import lombok.RequiredArgsConstructor;
 
 /**

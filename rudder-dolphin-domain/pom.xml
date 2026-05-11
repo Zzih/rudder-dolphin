@@ -13,18 +13,11 @@
     <name>Rudder Dolphin Domain</name>
 
     <dependencies>
-        <!-- Rudder publish wire contract: bundle types flow through this module. -->
+        <!-- Bundle model types live in the client module so external consumers (rudder included)
+             can depend on the SDK directly without pulling rudder-internal modules. -->
         <dependency>
             <groupId>io.github.zzih</groupId>
-            <artifactId>rudder-publish-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.zzih</groupId>
-            <artifactId>rudder-task-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.zzih</groupId>
-            <artifactId>rudder-common</artifactId>
+            <artifactId>rudder-dolphin-client</artifactId>
         </dependency>
     </dependencies>
 </project>
