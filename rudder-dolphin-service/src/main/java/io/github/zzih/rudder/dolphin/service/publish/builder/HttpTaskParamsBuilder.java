@@ -17,6 +17,8 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.builder;
 
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
+
 import java.util.Map;
 
 import org.apache.dolphinscheduler.plugin.task.http.HttpParameters;
@@ -24,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import lombok.RequiredArgsConstructor;
 
 /** Pass-through for {@code HTTP} into DS {@link HttpParameters}. */

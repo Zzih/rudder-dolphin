@@ -17,6 +17,7 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.strategy;
 
+import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
 import io.github.zzih.rudder.dolphin.common.constants.PublishConstants;
 import io.github.zzih.rudder.dolphin.common.utils.ThreadParamMapUtils;
 import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

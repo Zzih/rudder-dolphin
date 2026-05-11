@@ -12,6 +12,11 @@
     <artifactId>rudder-dolphin-dao</artifactId>
     <name>Rudder Dolphin DAO</name>
 
+    <properties>
+        <!-- Internal module, not published to Maven Central. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.github.zzih</groupId>

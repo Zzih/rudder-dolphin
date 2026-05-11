@@ -12,6 +12,11 @@
     <artifactId>rudder-dolphin-domain</artifactId>
     <name>Rudder Dolphin Domain</name>
 
+    <properties>
+        <!-- Internal module, not published to Maven Central. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <!-- Bundle model types live in the client module so external consumers (rudder included)
              can depend on the SDK directly without pulling rudder-internal modules. -->

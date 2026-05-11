@@ -17,10 +17,9 @@
 
 package io.github.zzih.rudder.dolphin.service.publish;
 
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
-
 import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
 import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
+import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
 
 public interface PublishService {
 
