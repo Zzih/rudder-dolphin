@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.zzih.rudder.publish.api.bundle.ScheduleBundle;
+import io.github.zzih.rudder.dolphin.client.model.ScheduleBundle;
 import lombok.RequiredArgsConstructor;
 
 /**

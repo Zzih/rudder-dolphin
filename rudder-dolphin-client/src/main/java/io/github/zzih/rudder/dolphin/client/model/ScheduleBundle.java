@@ -15,18 +15,30 @@
  * limitations under the License.
  */
 
-package io.github.zzih.rudder.dolphin.service.publish;
+package io.github.zzih.rudder.dolphin.client.model;
 
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
+import java.time.LocalDateTime;
 
-import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
-import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public interface PublishService {
+/** Schedule snapshot for a workflow; the field being {@code null} means "no schedule configured". */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ScheduleBundle {
 
-    /** Full project publish — every existing workflow not covered by the bundle is taken offline. */
-    PublishResult publishProject(ProjectPublishBundle bundle);
+    private String cronExpression;
 
-    /** Single workflow incremental publish. */
-    PublishResult publishWorkflow(WorkflowPublishBundle bundle);
+    private String timezone;
+
+    private LocalDateTime startTime;
+
+    private LocalDateTime endTime;
+
+    /** {@code ONLINE} or {@code OFFLINE}; receiver decides whether to enable the schedule. */
+    private String status;
 }

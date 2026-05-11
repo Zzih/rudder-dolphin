@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package io.github.zzih.rudder.dolphin.service.publish;
+package io.github.zzih.rudder.dolphin.client.model;
 
-import io.github.zzih.rudder.dolphin.domain.result.PublishResult;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import io.github.zzih.rudder.dolphin.client.model.ProjectPublishBundle;
-import io.github.zzih.rudder.dolphin.client.model.WorkflowPublishBundle;
+/** DAG edge; source / target use taskCode aligned with {@link TaskBundle#getTaskCode()}. */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class EdgeBundle {
 
-public interface PublishService {
+    private Long sourceTaskCode;
 
-    /** Full project publish — every existing workflow not covered by the bundle is taken offline. */
-    PublishResult publishProject(ProjectPublishBundle bundle);
-
-    /** Single workflow incremental publish. */
-    PublishResult publishWorkflow(WorkflowPublishBundle bundle);
+    private Long targetTaskCode;
 }
