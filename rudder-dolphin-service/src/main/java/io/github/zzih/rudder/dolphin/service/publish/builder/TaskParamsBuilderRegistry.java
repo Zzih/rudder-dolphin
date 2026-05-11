@@ -17,6 +17,7 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.builder;
 
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import io.github.zzih.rudder.dolphin.common.exception.BizException;
 import io.github.zzih.rudder.dolphin.service.enums.PublishErrorCode;
 
@@ -30,7 +31,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import lombok.RequiredArgsConstructor;
 
 /**

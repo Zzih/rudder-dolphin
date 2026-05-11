@@ -17,6 +17,8 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.builder;
 
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import lombok.RequiredArgsConstructor;
 
 /** Rename {@code content} → {@code rawScript}, then convert into DS {@link PythonParameters}. */

@@ -17,6 +17,7 @@
 
 package io.github.zzih.rudder.dolphin.service.env;
 
+import io.github.zzih.rudder.dolphin.client.model.DatasourceBundle;
 import io.github.zzih.rudder.dolphin.common.exception.BizException;
 import io.github.zzih.rudder.dolphin.service.client.DolphinSchedulerClient;
 import io.github.zzih.rudder.dolphin.service.client.dto.DsDatasourceParam;
@@ -38,7 +39,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.zzih.rudder.dolphin.client.model.DatasourceBundle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

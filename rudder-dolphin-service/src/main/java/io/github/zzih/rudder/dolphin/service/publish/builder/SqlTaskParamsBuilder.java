@@ -17,6 +17,8 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.builder;
 
+import io.github.zzih.rudder.dolphin.client.model.DatasourceBundle;
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import io.github.zzih.rudder.dolphin.common.exception.BizException;
 import io.github.zzih.rudder.dolphin.service.enums.PublishErrorCode;
 import io.github.zzih.rudder.dolphin.service.env.DatasourceResolver;
@@ -30,8 +32,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.zzih.rudder.dolphin.client.model.DatasourceBundle;
-import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

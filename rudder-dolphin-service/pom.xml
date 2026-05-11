@@ -12,6 +12,11 @@
     <artifactId>rudder-dolphin-service</artifactId>
     <name>Rudder Dolphin Service</name>
 
+    <properties>
+        <!-- Internal module, not published to Maven Central. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.github.zzih</groupId>

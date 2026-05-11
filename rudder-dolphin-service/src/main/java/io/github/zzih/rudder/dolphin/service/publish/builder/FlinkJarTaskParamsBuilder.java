@@ -17,6 +17,7 @@
 
 package io.github.zzih.rudder.dolphin.service.publish.builder;
 
+import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import io.github.zzih.rudder.dolphin.common.exception.BizException;
 import io.github.zzih.rudder.dolphin.service.enums.PublishErrorCode;
 import io.github.zzih.rudder.dolphin.service.env.ResourceResolver;
@@ -30,7 +31,6 @@ import org.apache.dolphinscheduler.plugin.task.flink.FlinkParameters;
 import org.apache.dolphinscheduler.plugin.task.flink.ProgramType;
 import org.springframework.stereotype.Component;
 
-import io.github.zzih.rudder.dolphin.client.model.TaskType;
 import lombok.RequiredArgsConstructor;
 
 /**
